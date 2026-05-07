@@ -94,9 +94,7 @@ const request = indexedDB.open("BookShelfDB", 1);
 request.onupgradeneeded = (e) => { e.target.result.createObjectStore("books", {keyPath: "id"}); };
 request.onsuccess = (e) => { db = e.target.result; refreshCount(); renderShelf(); };
 
-// スペースを削除する関数
 const cleanSpace = (str) => (str || "").replace(/[\s　]+/g, "");
-
 const getSeries = (t) => t.replace(/(【.*?】|\[.*?\]|（.*?）|\(.*?\)|：.*$|:.*$| - .*$|　.*$|\s.*$|分冊版|ばら売り|コミック|\d+巻|vol\.\d+|第\d+)/gi, "").trim();
 
 async function getAllBooks() {
@@ -118,10 +116,9 @@ function formatBookData(item) {
   let img = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "";
   img = img.replace("http://", "https://");
   const date = info.publishedDate || "不明";
-  let rawAuthor = (info.authors && info.authors.length > 0) ? info.authors[0] : "作者不明";
   return {
     title: info.title || "無題",
-    author: cleanSpace(rawAuthor), // 登録時にスペースを消す
+    author: cleanSpace((info.authors && info.authors.length > 0) ? info.authors[0] : "作者不明"),
     image: img,
     date: date,
     kanaAuthor: "",
@@ -131,7 +128,6 @@ function formatBookData(item) {
 
 async function quickAdd(b, btn) {
   const books = await getAllBooks();
-  // 比較時もスペースを無視
   if (books.some(x => cleanSpace(x.title) === cleanSpace(b.title) && cleanSpace(x.author) === cleanSpace(b.author))) {
     showToast("登録済です"); return;
   }
@@ -153,159 +149,212 @@ async function searchAPI() {
     document.getElementById("searchResult").innerHTML = (data.items || []).map(x => {
       const b = formatBookData(x);
       const isOwned = books.some(ob => cleanSpace(ob.title) === cleanSpace(b.title) && cleanSpace(ob.author) === cleanSpace(b.author));
-      return `<div class="list-item"><img src="${b.image}"><div class="list<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>蔵書BL Pro 姓名統合版</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
-<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
-<style>
-  :root { --main:#9575cd; --bg:#f3e5f5; --accent:#673ab7; --text-main:#2a2a2a; --text-sub:#7e57c2; --card:#ffffff; }
-  body { font-family:sans-serif; background:var(--bg); margin:0; padding-bottom: 70px; color: var(--text-main); padding-top: env(safe-area-inset-top); }
-  .header { background:var(--main); color:white; padding:12px; text-align:center; font-weight:bold; position:sticky; top:0; z-index:110; display: flex; justify-content: center; align-items: center; gap: 10px; }
-  #totalCount { font-size: 14px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; }
-  .tab { display:flex; background:var(--main); position:sticky; top:43px; z-index:110; }
-  .tab button { flex:1; padding:12px 5px; border:none; background:none; color:#d1c4e9; font-weight:bold; font-size:12px; outline:none; }
-  .tab .active { color:#fff; border-bottom:3px solid #fff; }
-  .control-bar { display:grid; grid-template-columns: repeat(4, 1fr); background:#d1c4e9; position:sticky; top:84px; z-index:105; font-size:10px; }
-  .control-bar button { padding:10px 2px; border:none; background:none; color:var(--accent); font-weight:bold; }
-  .page { display:none; padding:10px; }
-  .page.active { display:block; }
-  input { width:100%; padding:12px; border-radius:8px; border:1px solid #b39ddb; font-size:16px; box-sizing:border-box; margin-bottom:10px; outline:none; }
-  .tool-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; background: var(--accent); color: white; font-size: 12px; font-weight: bold; }
-  .author-divider { color: var(--accent); font-size: 13px; font-weight: bold; padding: 15px 5px 5px; margin-bottom: 5px; border-top: 1px solid rgba(149,117,205,0.1); }
-  .horizontal-scroll { display: flex; overflow-x: auto; gap: 8px; padding: 5px 0 15px; }
-  .book-card { flex: 0 0 95px; position: relative; background: #333; border-radius: 6px; overflow: hidden; aspect-ratio: 3/4.2; }
-  .card-title { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; padding: 4px 2px; font-size: 9px; text-align: center; }
-  .badge { position: absolute; top: 4px; right: 4px; background: #f44336; color: white; font-size: 9px; border-radius: 10px; padding: 1px 5px; }
-  .flat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 10px; }
-  .list-item { background:var(--card); margin-bottom:6px; padding:10px; display:flex; align-items:center; gap:12px; border-radius:8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-  .list-item img { width:45px; height:63px; object-fit:cover; border-radius:4px; flex-shrink:0; background: #eee; }
-  .list-info { flex:1; min-width:0; }
-  .list-title { font-size:14px; font-weight:bold; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .list-author-sub { font-size:11px; color:var(--text-sub); }
-  .new-release-tag { font-size: 10px; background: #ff4081; color: white; padding: 1px 4px; border-radius: 4px; margin-right: 4px; }
-  .sub-page { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:200; overflow-y:auto; padding:15px; box-sizing:border-box; padding-top: env(safe-area-inset-top); }
-  .back-btn { background:#fff; border:1px solid var(--main); color:var(--accent); padding:8px 20px; border-radius:8px; margin-bottom:15px; }
-  #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; }
-  .modal-content { background:#fff; padding:20px; border-radius:15px; width:90%; max-width:400px; max-height: 85vh; overflow-y: auto; }
-  .img-edit-preview { width: 80px; height: 110px; object-fit: cover; border-radius: 4px; display: block; margin: 0 auto 10px; border: 1px solid #ddd; }
-  #interactive.viewport { width: 100%; height: 180px; overflow: hidden; position: relative; background: #000; border-radius: 8px; margin-bottom: 10px; display: none; }
-  #interactive.viewport canvas, video { width: 100%; position: absolute; top: 0; left: 0; }
-  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 25px; font-size: 13px; z-index: 2000; display: none; }
-</style>
-</head>
-<body>
+      return `<div class="list-item"><img src="${b.image}"><div class="list-info"><span class="list-title">${b.title}</span><span class="list-author-sub">${b.author}</span></div>
+      ${isOwned ? `<button class="add-btn" style="background:#ccc;border:none;padding:8px;border-radius:5px;">済</button>` : `<button class="add-btn" style="background:var(--main);color:white;border:none;padding:8px;border-radius:5px;" onclick='quickAdd(${JSON.stringify(b).replace(/'/g, "&apos;")}, this)'>追加</button>`}</div>`;
+    }).join("");
+  } catch(e) { document.getElementById("searchResult").innerHTML = "エラーが発生しました"; }
+}
 
-<div id="mainUI">
-  <div class="header">蔵書BL <span id="totalCount">0冊</span></div>
-  <div class="tab">
-    <button onclick="showPage('search',this)" class="active">検索登録</button>
-    <button onclick="showPage('shelf',this)">本棚</button>
-    <button onclick="showPage('author',this)">作者</button>
-    <button onclick="showPage('newBooks',this)">新刊</button>
-  </div>
-  <div id="shelfControls" class="control-bar" style="display:none;">
-    <button onclick="setSort('author')">作者順</button>
-    <button onclick="setSort('title')">作品順</button>
-    <button id="btnOrder" onclick="toggleOrder()">昇順 ↑</button>
-    <button onclick="toggleView()">切替</button>
-  </div>
-  
-  <div id="search" class="page active">
-    <div id="interactive" class="viewport"></div>
-    <div style="display:flex; gap:8px; margin-bottom:10px;">
-      <button class="tool-btn" id="scanBtn" onclick="toggleScanner()">📷 スキャン</button>
-      <button class="tool-btn" onclick="openManualAdd()">✍️ 手動登録</button>
+async function renderNewBooks() {
+  const container = document.getElementById("newList");
+  container.innerHTML = '<div style="text-align:center;padding:20px;">新刊（前後1ヶ月）を探しています...</div>';
+  const books = await getAllBooks();
+  const authors = [...new Set(books.map(b => cleanSpace(b.author)))].slice(0, 30);
+  const today = new Date();
+  const pastLimit = new Date(); pastLimit.setMonth(today.getMonth() - 1);
+  const futureLimit = new Date(); futureLimit.setMonth(today.getMonth() + 3);
+
+  let newFound = [];
+  for(let auth of authors) {
+    try {
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(auth)}&orderBy=newest&maxResults=10`);
+      const data = await res.json();
+      if(data.items) {
+        data.items.forEach(item => {
+          const b = formatBookData(item);
+          if (b.date === "不明") return;
+          const pubDate = new Date(b.date);
+          const isOwned = books.some(ob => cleanSpace(ob.title) === cleanSpace(b.title));
+          if(!isOwned && pubDate >= pastLimit && pubDate <= futureLimit) {
+            newFound.push(b);
+          }
+        });
+      }
+    } catch(e) {}
+  }
+  if(newFound.length === 0) { container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">直近の新刊は見つかりませんでした</div>'; return; }
+  const uniqueBooks = Array.from(new Set(newFound.map(b => b.title))).map(title => newFound.find(b => b.title === title));
+  uniqueBooks.sort((a,b) => b.date.localeCompare(a.date));
+  container.innerHTML = uniqueBooks.map(b => `
+    <div class="list-item">
+      <img src="${b.image}">
+      <div class="list-info">
+        <span class="list-title"><span class="new-release-tag">${b.date.replace(/-/g,"/")}</span>${b.title}</span>
+        <span class="list-author-sub">${b.author}</span>
+      </div>
+      <button class="add-btn" style="background:var(--accent);color:white;border:none;padding:8px;border-radius:5px;font-size:10px;" onclick='quickAdd(${JSON.stringify(b).replace(/'/g, "&apos;")}, this)'>追加</button>
     </div>
-    <div style="display:flex; gap:5px;">
-      <input id="q" type="search" placeholder="タイトル等で検索..." onkeypress="if(event.key==='Enter') searchAPI()">
-      <button onclick="searchAPI()" style="width:70px; height:43px; background:var(--accent); color:white; border:none; border-radius:8px; flex-shrink:0;">検索</button>
-    </div>
-    <div id="searchResult"></div>
-  </div>
+  `).join("");
+}
 
-  <div id="shelf" class="page"><input id="shelfSearch" type="search" placeholder="本棚から検索..." oninput="renderShelf()"><div id="shelfSummary"></div></div>
-  <div id="author" class="page"><input id="authorSearchInput" type="search" placeholder="作者名検索..." oninput="renderAuthors()"><div id="authorList"></div></div>
-  
-  <div id="newBooks" class="page">
-    <div id="newList"></div>
-  </div>
-</div>
+function openManualAdd() {
+  currentEditImg = "";
+  document.getElementById("modalBody").innerHTML = `<h3>手動登録</h3><img id="editPreview" class="img-edit-preview" style="display:none"><label style="display:block;text-align:center;background:#eee;padding:8px;border-radius:5px;font-size:12px;margin-bottom:10px;">📁 写真を選択<input type="file" accept="image/*" style="display:none;" onchange="handleImg(this)"></label>
+  <input id="mt" placeholder="タイトル"><input id="mtk" placeholder="タイトル読み（カナ）">
+  <input id="ma" placeholder="作者名"><input id="mak" placeholder="作者名読み（カナ）">
+  <button onclick="manualSave()" class="tool-btn" style="width:100%">登録</button><button onclick="closeModal()" style="width:100%;margin-top:10px;border:none;background:none;">閉じる</button>`;
+  document.getElementById("modal").style.display = "flex";
+}
 
-<div id="authorArchivePage" class="sub-page"><button class="back-btn" onclick="closeSubPage()">← 戻る</button><h2 id="archiveAuthorName"></h2><div id="ownedList"></div><div id="unownedList"></div></div>
-<div id="detailPage" class="sub-page"><button class="back-btn" onclick="closeSubPage()">← 戻る</button><h2 id="detailTitle"></h2><div id="detailList"></div></div>
-<div id="modal"><div class="modal-content" id="modalBody"></div></div>
-<div id="toast" class="toast"></div>
+function handleImg(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { currentEditImg = e.target.result; const p = document.getElementById("editPreview"); p.src = currentEditImg; p.style.display = "block"; }; reader.readAsDataURL(input.files[0]); } }
 
-<script>
-let db, sortKey = 'author', sortOrder = 1, viewMode = 'grid', isScanning = false, lastScan = "", currentEditImg = "";
-const collator = new Intl.Collator('ja', { numeric: true, sensitivity: 'base' });
+async function manualSave() {
+  const t = document.getElementById("mt").value, tk = document.getElementById("mtk").value, a = document.getElementById("ma").value, ak = document.getElementById("mak").value;
+  if(t&&a){ await quickAdd({title:t, kanaTitle:tk, author:cleanSpace(a), kanaAuthor:ak, image:currentEditImg, date:"不明"}); closeModal(); }
+}
 
-const request = indexedDB.open("BookShelfDB", 1);
-request.onupgradeneeded = (e) => { e.target.result.createObjectStore("books", {keyPath: "id"}); };
-request.onsuccess = (e) => { db = e.target.result; refreshCount(); renderShelf(); };
+async function openEditModal(id) {
+  const books = await getAllBooks(); const b = books.find(x => x.id === id); currentEditImg = b.image || "";
+  document.getElementById("modalBody").innerHTML = `<h3>編集</h3><img id="editPreview" src="${currentEditImg}" class="img-edit-preview"><label style="display:block;text-align:center;background:#eee;padding:8px;border-radius:5px;font-size:12px;margin-bottom:10px;">📁 画像変更<input type="file" accept="image/*" style="display:none;" onchange="handleImg(this)"></label>
+  <p style="font-size:10px;margin:0">タイトル / 読み</p><input id="et" value="${b.title||''}" placeholder="タイトル"><input id="etk" value="${b.kanaTitle||''}" placeholder="タイトルの読み（カナ）">
+  <p style="font-size:10px;margin:0">作者 / 読み</p><input id="ea" value="${b.author||''}" placeholder="作者名"><input id="eak" value="${b.kanaAuthor||''}" placeholder="作者名の読み（カナ）">
+  <div style="display:flex;gap:10px;"><button onclick="deleteBook('${id}')" style="flex:1;background:#e57373;color:white;border:none;padding:10px;border-radius:5px;">削除</button><button onclick="updateBook('${id}')" style="flex:1;background:var(--main);color:white;border:none;padding:10px;border-radius:5px;">保存</button></div>`;
+  document.getElementById("modal").style.display = "flex";
+}
 
-// スペースを削除する関数
-const cleanSpace = (str) => (str || "").replace(/[\s　]+/g, "");
+async function updateBook(id) {
+  const all = await getAllBooks();
+  const tx = db.transaction("books", "readwrite");
+  const store = tx.objectStore("books");
+  const b = all.find(x => x.id === id);
+  b.title = document.getElementById("et").value; b.kanaTitle = document.getElementById("etk").value;
+  b.author = cleanSpace(document.getElementById("ea").value); b.kanaAuthor = document.getElementById("eak").value;
+  b.image = currentEditImg; store.put(b);
+  tx.oncomplete = () => { closeModal(); renderShelf(); closeSubPage(); refreshCount(); showToast("保存しました"); };
+}
 
-const getSeries = (t) => t.replace(/(【.*?】|\[.*?\]|（.*?）|\(.*?\)|：.*$|:.*$| - .*$|　.*$|\s.*$|分冊版|ばら売り|コミック|\d+巻|vol\.\d+|第\d+)/gi, "").trim();
+async function deleteBook(id) { if(confirm("削除しますか？")){ const tx = db.transaction("books", "readwrite"); tx.objectStore("books").delete(id); tx.oncomplete = () => { closeModal(); renderShelf(); closeSubPage(); refreshCount(); }; } }
 
-async function getAllBooks() {
-  return new Promise(r => {
-    const tx = db.transaction("books", "readonly");
-    const s = tx.objectStore("books").getAll();
-    s.onsuccess = () => r(s.result);
+function renderShelf() {
+  getAllBooks().then(books => {
+    const container = document.getElementById("shelfSummary");
+    const filter = document.getElementById("shelfSearch").value.toLowerCase();
+    let groups = {};
+    books.filter(b => b.title.toLowerCase().includes(filter) || cleanSpace(b.author).toLowerCase().includes(filter)).forEach(b => {
+      const s = getSeries(b.title), auth = cleanSpace(b.author), key = s + "___" + auth;
+      if(!groups[key]) groups[key] = { info: b, count: 0, seriesName: s };
+      groups[key].count++;
+    });
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+      const g1 = groups[a], g2 = groups[b];
+      let v1 = (sortKey==='author') ? (g1.info.kanaAuthor||cleanSpace(g1.info.author)) : (g1.info.kanaTitle||g1.seriesName);
+      let v2 = (sortKey==='author') ? (g2.info.kanaAuthor||cleanSpace(g2.info.author)) : (g2.info.kanaTitle||g2.seriesName);
+      return collator.compare(v1, v2) * sortOrder;
+    });
+    let html = "";
+    if (sortKey === 'author') {
+      let currentA = "";
+      sortedKeys.forEach(k => {
+        const g = groups[k];
+        const auth = cleanSpace(g.info.author);
+        if (auth !== currentA) {
+          if (currentA !== "") html += (viewMode === 'grid' ? `</div>` : ``) + `</div>`;
+          currentA = auth;
+          html += `<div class="author-divider">${currentA}</div>` + (viewMode === 'grid' ? `<div class="horizontal-scroll">` : ``);
+        }
+        html += renderItem(g.seriesName, g);
+      });
+    } else {
+      html += `<div class="${viewMode === 'grid' ? 'flat-grid' : ''}">` + sortedKeys.map(k => renderItem(groups[k].seriesName, groups[k])).join("") + `</div>`;
+    }
+    container.innerHTML = html;
   });
 }
 
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.innerText = msg; t.style.display = "block";
-  setTimeout(() => { t.style.display = "none"; }, 2000);
+function renderItem(sn, data) {
+  const auth = cleanSpace(data.info.author);
+  if (viewMode === 'grid') return `<div class="book-card" onclick="openDetail('${sn.replace(/'/g, "\\'")}', '${auth.replace(/'/g, "\\'")}')"><img src="${data.info.image || ''}">${data.count > 1 ? `<div class="badge">${data.count}</div>` : ''}<div class="card-title">${sn}</div></div>`;
+  return `<div class="list-item" onclick="openDetail('${sn.replace(/'/g, "\\'")}', '${auth.replace(/'/g, "\\'")}')"><img src="${data.info.image || ''}"><div class="list-info"><span class="list-title">${sn}</span><span class="list-author-sub">${auth}</span></div><div style="color:var(--main);font-weight:bold">${data.count}</div></div>`;
 }
 
-function formatBookData(item) {
-  const info = item.volumeInfo;
-  let img = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "";
-  img = img.replace("http://", "https://");
-  const date = info.publishedDate || "不明";
-  let rawAuthor = (info.authors && info.authors.length > 0) ? info.authors[0] : "作者不明";
-  return {
-    title: info.title || "無題",
-    author: cleanSpace(rawAuthor), // 登録時にスペースを消す
-    image: img,
-    date: date,
-    kanaAuthor: "",
-    kanaTitle: ""
-  };
-}
-
-async function quickAdd(b, btn) {
+async function openDetail(sn, auth) {
   const books = await getAllBooks();
-  // 比較時もスペースを無視
-  if (books.some(x => cleanSpace(x.title) === cleanSpace(b.title) && cleanSpace(x.author) === cleanSpace(b.author))) {
-    showToast("登録済です"); return;
-  }
-  b.id = "id" + Date.now() + Math.random();
-  b.author = cleanSpace(b.author);
-  const tx = db.transaction("books", "readwrite");
-  tx.objectStore("books").put(b);
-  tx.oncomplete = () => { refreshCount(); if(btn) btn.innerHTML = "✓"; renderShelf(); showToast("登録しました"); };
+  const items = books.filter(b => getSeries(b.title) === sn && cleanSpace(b.author) === cleanSpace(auth)).sort((a,b) => collator.compare(a.title, b.title));
+  document.getElementById("mainUI").style.display = "none"; document.getElementById("detailPage").style.display = "block";
+  document.getElementById("detailTitle").innerText = sn;
+  document.getElementById("detailList").innerHTML = items.map(b => `<div class="list-item" onclick="openEditModal('${b.id}')"><img src="${b.image}"><div class="list-info"><span class="list-title">${b.title}</span><span class="list-author-sub">${b.author}</span></div></div>`).join("");
 }
 
-async function searchAPI() {
-  let query = document.getElementById("q").value;
-  if(!query) return;
-  document.getElementById("searchResult").innerHTML = "検索中...";
+async function renderAuthors() {
+  const list = document.getElementById("authorList"), filter = document.getElementById("authorSearchInput").value.toLowerCase();
+  const books = await getAllBooks();
+  let amap = {}; 
+  books.forEach(b => { 
+    const name = cleanSpace(b.author);
+    if(!amap[name]) amap[name] = {count:0, kana:b.kanaAuthor||name}; 
+    amap[name].count++; 
+  });
+  const sortedNames = Object.keys(amap).filter(n => n.toLowerCase().includes(filter)).sort((a,b) => collator.compare(amap[a].kana, amap[b].kana));
+  list.innerHTML = sortedNames.map(n => `<div class="list-item" onclick="openAuthorArchive('${n.replace(/'/g, "\\'")}')"><div class="list-info"><span class="list-title">${n}</span></div><span style="font-weight:bold;color:var(--main)">${amap[n].count}冊</span></div>`).join("");
+}
+
+async function openAuthorArchive(name) {
+  document.getElementById("mainUI").style.display = "none"; document.getElementById("authorArchivePage").style.display = "block";
+  document.getElementById("archiveAuthorName").innerText = name;
+  const books = await getAllBooks();
+  document.getElementById("ownedList").innerHTML = `<div class="author-divider">所有作品</div>` + 
+    books.filter(b => cleanSpace(b.author) === cleanSpace(name)).sort((a,b)=>collator.compare(a.title, b.title))
+    .map(b => `<div class="list-item" onclick="openEditModal('${b.id}')"><img src="${b.image}"><div class="list-info"><span class="list-title">${b.title}</span></div></div>`).join("");
+  
+  document.getElementById("unownedList").innerHTML = `<div class="author-divider">未登録作品</div>検索中...`;
   try {
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=30`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(name)}&maxResults=40`);
     const data = await res.json();
-    const books = await getAllBooks();
-    document.getElementById("searchResult").innerHTML = (data.items || []).map(x => {
+    const unowned = (data.items || []).filter(x => {
+      const title = x.volumeInfo.title;
+      return !books.some(ob => cleanSpace(ob.title) === cleanSpace(title));
+    });
+    document.getElementById("unownedList").innerHTML = `<div class="author-divider">未登録作品</div>` + unowned.map(x => {
       const b = formatBookData(x);
-      const isOwned = books.some(ob => cleanSpace(ob.title) === cleanSpace(b.title) && cleanSpace(ob.author) === cleanSpace(b.author));
-      return `<div class="list-item"><img src="${b.image}"><div class="list
+      return `<div class="list-item"><img src="${b.image}"><div class="list-info"><span class="list-title">${b.title}</span></div><button class="add-btn" style="background:var(--main);color:white;border:none;padding:8px;border-radius:5px;" onclick='quickAdd(${JSON.stringify(b).replace(/'/g, "&apos;")}, this)'>追加</button></div>`;
+    }).join("");
+  } catch(e) { document.getElementById("unownedList").innerHTML = "読み込みに失敗しました"; }
+}
+
+function showPage(p, btn) { 
+  document.querySelectorAll(".page").forEach(x => x.classList.remove("active")); 
+  document.querySelectorAll(".tab button").forEach(x => x.classList.remove("active")); 
+  document.getElementById(p).classList.add("active"); btn.classList.add("active"); 
+  document.getElementById("shelfControls").style.display = (p === 'shelf') ? 'grid' : 'none'; 
+  if(p === 'shelf') renderShelf(); if(p === 'author') renderAuthors();
+  if(p === 'newBooks') renderNewBooks();
+}
+function setSort(k) { sortKey = k; renderShelf(); }
+function toggleOrder() { sortOrder *= -1; document.getElementById("btnOrder").innerText = sortOrder === 1 ? "昇順 ↑" : "降順 ↓"; renderShelf(); }
+function toggleView() { viewMode = (viewMode === 'list' ? 'grid' : 'list'); renderShelf(); }
+function closeSubPage() { document.querySelectorAll(".sub-page").forEach(s => s.style.display = "none"); document.getElementById("mainUI").style.display = "block"; }
+function closeModal() { document.getElementById("modal").style.display = "none"; }
+async function refreshCount() { const books = await getAllBooks(); document.getElementById("totalCount").innerText = books.length + "冊"; }
+
+function toggleScanner() {
+  const v = document.getElementById("interactive");
+  if(isScanning) { Quagga.stop(); v.style.display = "none"; isScanning = false; document.getElementById("scanBtn").innerText = "📷 スキャン"; return; }
+  isScanning = true; v.style.display = "block"; document.getElementById("scanBtn").innerText = "⏹ 停止";
+  Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: v, constraints: { facingMode: "environment" } }, decoder: { readers: ["ean_reader"] } }, (err) => { if (err) return; Quagga.start(); });
+  Quagga.onDetected(async (res) => {
+    const code = res.codeResult.code;
+    if ((code.startsWith("978") || code.startsWith("979")) && code !== lastScan) {
+      lastScan = code;
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${code}`);
+      const data = await response.json();
+      if(data.items && data.items.length > 0) {
+        const b = formatBookData(data.items[0]);
+        await quickAdd(b);
+      }
+      setTimeout(() => { lastScan = ""; }, 2000);
+    }
+  });
+}
+</script>
+</body>
+</html>
