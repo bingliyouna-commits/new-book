@@ -78,7 +78,7 @@
   
   <div id="newBooks" class="page">
     <div style="background:var(--card); padding:10px; border-radius:8px; font-size:12px; margin-bottom:10px; color:var(--accent);">
-      登録済みの作者から1ヶ月以内の新刊を探します
+      登録作者の「前後1ヶ月」の新刊を表示します
     </div>
     <div id="newList"></div>
   </div>
@@ -156,21 +156,27 @@ async function searchAPI() {
 
 async function renderNewBooks() {
   const container = document.getElementById("newList");
-  container.innerHTML = "作者の新刊をチェック中...";
+  container.innerHTML = "情報を収集中...";
   const books = await getAllBooks();
-  const authors = [...new Set(books.map(b => b.author))].slice(0, 20); // 作者上位20名に絞って検索
+  const authors = [...new Set(books.map(b => b.author))].slice(0, 30);
+  
+  // 期間設定（今日から前後30日）
+  const now = new Date();
+  const minDate = new Date(); minDate.setDate(now.getDate() - 30);
+  const maxDate = new Date(); maxDate.setDate(now.getDate() + 30);
+  
   let newFound = [];
-
   for(let auth of authors) {
     try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(auth)}&orderBy=newest&maxResults=3`);
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(auth)}&orderBy=newest&maxResults=5`);
       const data = await res.json();
       if(data.items) {
         data.items.forEach(item => {
           const b = formatBookData(item);
+          const pubDate = new Date(b.date);
           const isOwned = books.some(ob => ob.title === b.title);
-          // 2024年以降、かつ未所持のみ
-          if(!isOwned && (b.date.startsWith("2025") || b.date.startsWith("2026"))) {
+          // 期間内かつ未所持のみ
+          if(!isOwned && pubDate >= minDate && pubDate <= maxDate) {
             newFound.push(b);
           }
         });
@@ -179,18 +185,17 @@ async function renderNewBooks() {
   }
   
   if(newFound.length === 0) {
-    container.innerHTML = "直近の新刊は見つかりませんでした";
-    return;
+    container.innerHTML = "直近1ヶ月の新刊は見つかりませんでした"; return;
   }
-
-  // 日付順に並び替え
+  
+  // 日付順にソート
   newFound.sort((a,b) => b.date.localeCompare(a.date));
   
   container.innerHTML = newFound.map(b => `
     <div class="list-item">
       <img src="${b.image}">
       <div class="list-info">
-        <span class="list-title"><span class="new-release-tag">${b.date.replace(/-/g,"/")}</span>${b.title}</span>
+        <span class="list-title"><span class="new-release-tag">${b.date.replace(/-/g,"/") === b.date ? '近日発売' : b.date.replace(/-/g,"/")}</span>${b.title}</span>
         <span class="list-author-sub">${b.author}</span>
       </div>
       <button class="add-btn" style="background:var(--accent);color:white;border:none;padding:8px;border-radius:5px;font-size:10px;" onclick='quickAdd(${JSON.stringify(b).replace(/'/g, "&apos;")}, this)'>追加</button>
